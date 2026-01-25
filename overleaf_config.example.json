@@ -1,0 +1,15 @@
+{
+  "projects": {
+    "thesis": {
+      "name": "My PhD Thesis",
+      "projectId": "YOUR_OVERLEAF_PROJECT_ID",
+      "gitToken": "YOUR_OVERLEAF_GIT_TOKEN"
+    },
+    "paper": {
+      "name": "Research Paper",
+      "projectId": "ANOTHER_PROJECT_ID",
+      "gitToken": "ANOTHER_GIT_TOKEN"
+    }
+  },
+  "defaultProject": "thesis"
+}
