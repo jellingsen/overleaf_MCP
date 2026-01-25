@@ -4,7 +4,7 @@ A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that p
 
 ## Features
 
-### 13 Tools for Complete Project Management
+### 14 Tools for Complete Project Management
 
 | Category | Tool | Description |
 |----------|------|-------------|
@@ -17,7 +17,8 @@ A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that p
 | | `get_section_content` | Get full content of a specific section |
 | | `list_history` | View git commit history |
 | | `get_diff` | Compare changes between versions |
-| **Update** | `edit_file` | Modify files with automatic git commit/push |
+| **Update** | `edit_file` | **Surgical edit** - replace specific text (old_string → new_string) |
+| | `rewrite_file` | Replace entire file contents |
 | | `update_section` | Update a specific LaTeX section by title |
 | | `sync_project` | Pull latest changes from Overleaf |
 | **Delete** | `delete_file` | Remove files from projects |
@@ -27,7 +28,7 @@ A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that p
 - **Git Integration**: Uses Overleaf's Git integration for reliable sync
 - **Multi-Project Support**: Configure and switch between multiple projects
 - **LaTeX-Aware**: Understands document structure for section-based operations
-- **Atomic Operations**: All edits are committed and pushed atomically
+- **Auto-Push**: All write operations commit and push to Overleaf immediately
 - **Local Caching**: Fast access with local repository cache
 
 ---
@@ -230,9 +231,9 @@ Once configured, you can ask the AI assistant:
 
 ### Editing Content
 ```
-"Edit main.tex and fix the typo in the abstract"
+"Edit main.tex and replace 'teh' with 'the'"
+"Rewrite the abstract.tex file with this new content: ..."
 "Update the 'Introduction' section with this new content: ..."
-"Add a new paragraph to the conclusion"
 ```
 
 ### Creating Files
