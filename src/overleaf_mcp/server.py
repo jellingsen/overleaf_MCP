@@ -241,7 +241,7 @@ async def list_tools() -> list[Tool]:
             name="create_file",
             description=(
                 "Create a new file in an existing Overleaf project. "
-                "Commits and optionally pushes the changes."
+                "Commits and pushes the changes immediately."
             ),
             inputSchema={
                 "type": "object",
@@ -257,10 +257,6 @@ async def list_tools() -> list[Tool]:
                     "commit_message": {
                         "type": "string",
                         "description": "Git commit message",
-                    },
-                    "push": {
-                        "type": "boolean",
-                        "description": "Push changes to Overleaf (default: true)",
                     },
                     "project_name": {
                         "type": "string",
@@ -409,8 +405,9 @@ async def list_tools() -> list[Tool]:
         Tool(
             name="edit_file",
             description=(
-                "Edit an existing file in an Overleaf project. "
-                "Commits and optionally pushes the changes."
+                "Make surgical edits to a file by replacing specific text. "
+                "The old_string must match exactly (including whitespace). "
+                "Commits and pushes immediately."
             ),
             inputSchema={
                 "type": "object",
@@ -419,17 +416,46 @@ async def list_tools() -> list[Tool]:
                         "type": "string",
                         "description": "Path to the file to edit",
                     },
-                    "content": {
+                    "old_string": {
                         "type": "string",
-                        "description": "New content for the file",
+                        "description": "The exact text to find and replace",
+                    },
+                    "new_string": {
+                        "type": "string",
+                        "description": "The text to replace it with",
                     },
                     "commit_message": {
                         "type": "string",
                         "description": "Git commit message",
                     },
-                    "push": {
-                        "type": "boolean",
-                        "description": "Push changes to Overleaf (default: true)",
+                    "project_name": {
+                        "type": "string",
+                        "description": "Project identifier from config (uses default if not specified)",
+                    },
+                },
+                "required": ["file_path", "old_string", "new_string"],
+            },
+        ),
+        Tool(
+            name="rewrite_file",
+            description=(
+                "Replace entire file contents. "
+                "Commits and pushes immediately."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "file_path": {
+                        "type": "string",
+                        "description": "Path to the file to rewrite",
+                    },
+                    "content": {
+                        "type": "string",
+                        "description": "New content for the entire file",
+                    },
+                    "commit_message": {
+                        "type": "string",
+                        "description": "Git commit message",
                     },
                     "project_name": {
                         "type": "string",
@@ -443,7 +469,7 @@ async def list_tools() -> list[Tool]:
             name="update_section",
             description=(
                 "Update a specific section in a LaTeX file by its title. "
-                "Replaces the section content while preserving surrounding content."
+                "Commits and pushes immediately."
             ),
             inputSchema={
                 "type": "object",
@@ -463,10 +489,6 @@ async def list_tools() -> list[Tool]:
                     "commit_message": {
                         "type": "string",
                         "description": "Git commit message",
-                    },
-                    "push": {
-                        "type": "boolean",
-                        "description": "Push changes to Overleaf (default: true)",
                     },
                     "project_name": {
                         "type": "string",
@@ -495,7 +517,7 @@ async def list_tools() -> list[Tool]:
             name="delete_file",
             description=(
                 "Delete a file from an Overleaf project. "
-                "Commits and optionally pushes the changes."
+                "Commits and pushes immediately."
             ),
             inputSchema={
                 "type": "object",
@@ -507,10 +529,6 @@ async def list_tools() -> list[Tool]:
                     "commit_message": {
                         "type": "string",
                         "description": "Git commit message",
-                    },
-                    "push": {
-                        "type": "boolean",
-                        "description": "Push changes to Overleaf (default: true)",
                     },
                     "project_name": {
                         "type": "string",
@@ -582,7 +600,6 @@ async def execute_tool(name: str, arguments: dict[str, Any]) -> str:
         file_path = arguments["file_path"]
         content = arguments["content"]
         commit_message = arguments.get("commit_message", f"Add {file_path}")
-        push = arguments.get("push", True)
 
         # Validate and create path
         target_path = validate_path(repo_path, file_path)
@@ -602,12 +619,9 @@ async def execute_tool(name: str, arguments: dict[str, Any]) -> str:
         # Git operations
         repo.index.add([file_path])
         repo.index.commit(commit_message)
+        repo.remotes.origin.push()
 
-        if push:
-            repo.remotes.origin.push()
-            return f"Created and pushed '{file_path}'"
-        else:
-            return f"Created '{file_path}' (not pushed). Run sync_project or use push=true to push changes."
+        return f"Created and pushed '{file_path}'"
 
     # === READ OPERATIONS ===
 
@@ -772,9 +786,52 @@ async def execute_tool(name: str, arguments: dict[str, Any]) -> str:
         repo_path = get_repo_path(project.project_id)
 
         file_path = arguments["file_path"]
+        old_string = arguments["old_string"]
+        new_string = arguments["new_string"]
+        commit_message = arguments.get("commit_message", f"Edit {file_path}")
+
+        target_path = validate_path(repo_path, file_path)
+
+        if not target_path.exists():
+            return f"Error: File '{file_path}' not found"
+
+        content = target_path.read_text()
+
+        # Check if old_string exists
+        if old_string not in content:
+            # Show a preview of the file to help debug
+            preview = content[:500] + "..." if len(content) > 500 else content
+            return f"Error: old_string not found in '{file_path}'. File preview:\n{preview}"
+
+        # Check for uniqueness
+        count = content.count(old_string)
+        if count > 1:
+            return f"Error: old_string appears {count} times in '{file_path}'. Make it more specific to match exactly once."
+
+        # Perform the replacement
+        new_content = content.replace(old_string, new_string, 1)
+
+        # Write file
+        target_path.write_text(new_content)
+
+        # Configure git user if needed
+        config_git_user(repo)
+
+        # Git operations
+        repo.index.add([file_path])
+        repo.index.commit(commit_message)
+        repo.remotes.origin.push()
+
+        return f"Edited and pushed '{file_path}'"
+
+    elif name == "rewrite_file":
+        project = get_project_config(arguments.get("project_name"))
+        repo = ensure_repo(project)
+        repo_path = get_repo_path(project.project_id)
+
+        file_path = arguments["file_path"]
         content = arguments["content"]
-        commit_message = arguments.get("commit_message", f"Update {file_path}")
-        push = arguments.get("push", True)
+        commit_message = arguments.get("commit_message", f"Rewrite {file_path}")
 
         target_path = validate_path(repo_path, file_path)
 
@@ -790,12 +847,9 @@ async def execute_tool(name: str, arguments: dict[str, Any]) -> str:
         # Git operations
         repo.index.add([file_path])
         repo.index.commit(commit_message)
+        repo.remotes.origin.push()
 
-        if push:
-            repo.remotes.origin.push()
-            return f"Updated and pushed '{file_path}'"
-        else:
-            return f"Updated '{file_path}' (not pushed). Run sync_project or use push=true to push changes."
+        return f"Rewrote and pushed '{file_path}'"
 
     elif name == "update_section":
         project = get_project_config(arguments.get("project_name"))
@@ -806,7 +860,6 @@ async def execute_tool(name: str, arguments: dict[str, Any]) -> str:
         section_title = arguments["section_title"]
         new_content = arguments["new_content"]
         commit_message = arguments.get("commit_message", f"Update section '{section_title}'")
-        push = arguments.get("push", True)
 
         target_path = validate_path(repo_path, file_path)
 
@@ -853,12 +906,9 @@ async def execute_tool(name: str, arguments: dict[str, Any]) -> str:
         # Git operations
         repo.index.add([file_path])
         repo.index.commit(commit_message)
+        repo.remotes.origin.push()
 
-        if push:
-            repo.remotes.origin.push()
-            return f"Updated section '{section_title}' and pushed"
-        else:
-            return f"Updated section '{section_title}' (not pushed)"
+        return f"Updated section '{section_title}' and pushed"
 
     elif name == "sync_project":
         project = get_project_config(arguments.get("project_name"))
@@ -893,7 +943,6 @@ async def execute_tool(name: str, arguments: dict[str, Any]) -> str:
 
         file_path = arguments["file_path"]
         commit_message = arguments.get("commit_message", f"Delete {file_path}")
-        push = arguments.get("push", True)
 
         target_path = validate_path(repo_path, file_path)
 
@@ -907,12 +956,9 @@ async def execute_tool(name: str, arguments: dict[str, Any]) -> str:
         repo.index.remove([file_path])
         target_path.unlink()
         repo.index.commit(commit_message)
+        repo.remotes.origin.push()
 
-        if push:
-            repo.remotes.origin.push()
-            return f"Deleted and pushed '{file_path}'"
-        else:
-            return f"Deleted '{file_path}' (not pushed)"
+        return f"Deleted and pushed '{file_path}'"
 
     else:
         return f"Unknown tool: {name}"
