@@ -1,0 +1,39 @@
+name: overleaf-mcp-api
+region: nyc
+
+services:
+  - name: api
+    github:
+      repo: YOUR_GITHUB_USERNAME/overleaf-mcp
+      branch: main
+      deploy_on_push: true
+    
+    dockerfile_path: Dockerfile
+    
+    http_port: 8000
+    
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    
+    envs:
+      - key: OVERLEAF_CONFIG_FILE
+        value: /app/overleaf_config.json
+      - key: OVERLEAF_TEMP_DIR
+        value: /app/overleaf_cache
+      - key: API_KEY
+        scope: RUN_TIME
+        type: SECRET
+      - key: OVERLEAF_PROJECT_ID
+        scope: RUN_TIME
+        type: SECRET
+      - key: OVERLEAF_GIT_TOKEN
+        scope: RUN_TIME
+        type: SECRET
+    
+    health_check:
+      http_path: /health
+      initial_delay_seconds: 10
+      period_seconds: 10
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 3

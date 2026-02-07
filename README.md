@@ -2,6 +2,30 @@
 
 A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that provides full CRUD operations for [Overleaf](https://www.overleaf.com/) LaTeX projects. Enables AI assistants to read, edit, create, and delete files in your Overleaf projects.
 
+**Now with FastAPI wrapper for ChatGPT integration!** Deploy to DigitalOcean and access your thesis from ChatGPT web interface.
+
+## 🚀 Quick Start
+
+**New here?** Start with [GETTING_STARTED.md](GETTING_STARTED.md) for a guided introduction.
+
+**Want to deploy?** Follow [CHECKLIST.md](CHECKLIST.md) for step-by-step instructions.
+
+**Just testing?** Run `./run_api.sh` and visit http://localhost:8000/docs
+
+## How It Works
+
+```
+┌─────────────┐         ┌──────────────┐         ┌─────────────┐
+│   ChatGPT   │◄───────►│  FastAPI on  │◄───────►│  Overleaf   │
+│  (Browser)  │  HTTPS  │ DigitalOcean │   Git   │   Server    │
+└─────────────┘         └──────────────┘         └─────────────┘
+```
+
+1. Ask ChatGPT to edit your thesis
+2. API processes request and updates files
+3. Changes sync automatically to Overleaf
+4. View updates in Overleaf web editor
+
 ## Features
 
 ### 14 Tools for Complete Project Management
@@ -41,7 +65,7 @@ A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that p
 - Git
 - Overleaf account with Git integration (requires paid plan)
 
-### Install with pip
+### For MCP Usage (Claude Desktop, etc.)
 
 ```bash
 # Clone the repository
@@ -56,15 +80,15 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -e .
 ```
 
-### Install with uv (faster)
+### For ChatGPT / HTTP API Usage
 
+See [QUICKSTART.md](QUICKSTART.md) for local testing, or [DEPLOYMENT.md](DEPLOYMENT.md) for deploying to DigitalOcean.
+
+**Quick start:**
 ```bash
-git clone https://github.com/YOUR_USERNAME/overleaf-mcp.git
-cd overleaf-mcp
-
-uv venv
-source .venv/bin/activate
-uv pip install -e .
+pip install -e .
+./run_api.sh
+# API runs at http://localhost:8000
 ```
 
 ---
@@ -122,6 +146,17 @@ export OVERLEAF_GIT_TOKEN="your_git_token"
 ---
 
 ## Client Configuration
+
+### ChatGPT (Web Browser)
+
+Deploy the FastAPI wrapper to DigitalOcean and configure a Custom GPT:
+
+1. **Deploy**: Follow [DEPLOYMENT.md](DEPLOYMENT.md) to deploy to DigitalOcean App Platform
+2. **Create Custom GPT**: Go to https://chat.openai.com/ → My GPTs → Create
+3. **Add Actions**: Import the OpenAPI schema from `openapi.yaml`
+4. **Authenticate**: Use Bearer token with your API key
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for complete instructions.
 
 ### Claude Desktop
 

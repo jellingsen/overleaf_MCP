@@ -1,0 +1,532 @@
+openapi: 3.1.0
+info:
+  title: Overleaf MCP API
+  description: HTTP API for managing Overleaf LaTeX projects
+  version: 1.0.0
+
+servers:
+  - url: https://your-app-url.ondigitalocean.app
+    description: Production server (replace with your actual URL)
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: API key for authentication
+
+  schemas:
+    ToolRequest:
+      type: object
+      properties:
+        arguments:
+          type: object
+          additionalProperties: true
+          description: Tool-specific arguments
+
+    ToolResponse:
+      type: object
+      properties:
+        result:
+          type: string
+          description: Result of the operation
+        success:
+          type: boolean
+          description: Whether the operation succeeded
+
+security:
+  - BearerAuth: []
+
+paths:
+  /:
+    get:
+      summary: Health check
+      security: []
+      responses:
+        '200':
+          description: Service is running
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  service:
+                    type: string
+
+  /health:
+    get:
+      summary: Detailed health check
+      security: []
+      responses:
+        '200':
+          description: Service health status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  projects_configured:
+                    type: integer
+                  default_project:
+                    type: string
+
+  /projects:
+    get:
+      operationId: listProjects
+      summary: List all configured Overleaf projects
+      security: []
+      responses:
+        '200':
+          description: List of projects
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolResponse'
+
+  /files/list:
+    post:
+      operationId: listFiles
+      summary: List files in a project
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arguments:
+                  type: object
+                  properties:
+                    extension:
+                      type: string
+                      description: Filter by file extension (e.g., '.tex')
+                    project_name:
+                      type: string
+                      description: Project identifier
+      responses:
+        '200':
+          description: List of files
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolResponse'
+
+  /files/read:
+    post:
+      operationId: readFile
+      summary: Read a file's content
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arguments:
+                  type: object
+                  required:
+                    - file_path
+                  properties:
+                    file_path:
+                      type: string
+                      description: Path to the file
+                    project_name:
+                      type: string
+                      description: Project identifier
+      responses:
+        '200':
+          description: File content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolResponse'
+
+  /sections/list:
+    post:
+      operationId: getSections
+      summary: Get sections from a LaTeX file
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arguments:
+                  type: object
+                  required:
+                    - file_path
+                  properties:
+                    file_path:
+                      type: string
+                      description: Path to the LaTeX file
+                    project_name:
+                      type: string
+                      description: Project identifier
+      responses:
+        '200':
+          description: List of sections
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolResponse'
+
+  /sections/read:
+    post:
+      operationId: getSectionContent
+      summary: Get content of a specific section
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arguments:
+                  type: object
+                  required:
+                    - file_path
+                    - section_title
+                  properties:
+                    file_path:
+                      type: string
+                      description: Path to the LaTeX file
+                    section_title:
+                      type: string
+                      description: Title of the section
+                    project_name:
+                      type: string
+                      description: Project identifier
+      responses:
+        '200':
+          description: Section content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolResponse'
+
+  /history:
+    post:
+      operationId: listHistory
+      summary: Get git commit history
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arguments:
+                  type: object
+                  properties:
+                    limit:
+                      type: integer
+                      description: Maximum number of commits
+                    file_path:
+                      type: string
+                      description: Filter to specific file
+                    project_name:
+                      type: string
+                      description: Project identifier
+      responses:
+        '200':
+          description: Commit history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolResponse'
+
+  /diff:
+    post:
+      operationId: getDiff
+      summary: Get git diff
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arguments:
+                  type: object
+                  properties:
+                    from_ref:
+                      type: string
+                      description: Starting reference
+                    to_ref:
+                      type: string
+                      description: Ending reference
+                    file_path:
+                      type: string
+                      description: Filter to specific file
+                    project_name:
+                      type: string
+                      description: Project identifier
+      responses:
+        '200':
+          description: Git diff
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolResponse'
+
+  /files/create:
+    post:
+      operationId: createFile
+      summary: Create a new file
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arguments:
+                  type: object
+                  required:
+                    - file_path
+                    - content
+                  properties:
+                    file_path:
+                      type: string
+                      description: Path for the new file
+                    content:
+                      type: string
+                      description: File content
+                    commit_message:
+                      type: string
+                      description: Git commit message
+                    project_name:
+                      type: string
+                      description: Project identifier
+      responses:
+        '200':
+          description: File created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolResponse'
+
+  /files/edit:
+    post:
+      operationId: editFile
+      summary: Edit a file with surgical replacement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arguments:
+                  type: object
+                  required:
+                    - file_path
+                    - old_string
+                    - new_string
+                  properties:
+                    file_path:
+                      type: string
+                      description: Path to the file
+                    old_string:
+                      type: string
+                      description: Text to find
+                    new_string:
+                      type: string
+                      description: Replacement text
+                    commit_message:
+                      type: string
+                      description: Git commit message
+                    project_name:
+                      type: string
+                      description: Project identifier
+      responses:
+        '200':
+          description: File edited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolResponse'
+
+  /files/rewrite:
+    post:
+      operationId: rewriteFile
+      summary: Rewrite entire file content
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arguments:
+                  type: object
+                  required:
+                    - file_path
+                    - content
+                  properties:
+                    file_path:
+                      type: string
+                      description: Path to the file
+                    content:
+                      type: string
+                      description: New file content
+                    commit_message:
+                      type: string
+                      description: Git commit message
+                    project_name:
+                      type: string
+                      description: Project identifier
+      responses:
+        '200':
+          description: File rewritten
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolResponse'
+
+  /sections/update:
+    post:
+      operationId: updateSection
+      summary: Update a specific section
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arguments:
+                  type: object
+                  required:
+                    - file_path
+                    - section_title
+                    - new_content
+                  properties:
+                    file_path:
+                      type: string
+                      description: Path to the LaTeX file
+                    section_title:
+                      type: string
+                      description: Title of the section
+                    new_content:
+                      type: string
+                      description: New section content
+                    commit_message:
+                      type: string
+                      description: Git commit message
+                    project_name:
+                      type: string
+                      description: Project identifier
+      responses:
+        '200':
+          description: Section updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolResponse'
+
+  /projects/sync:
+    post:
+      operationId: syncProject
+      summary: Sync project with Overleaf
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arguments:
+                  type: object
+                  properties:
+                    project_name:
+                      type: string
+                      description: Project identifier
+      responses:
+        '200':
+          description: Project synced
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolResponse'
+
+  /files/delete:
+    post:
+      operationId: deleteFile
+      summary: Delete a file
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arguments:
+                  type: object
+                  required:
+                    - file_path
+                  properties:
+                    file_path:
+                      type: string
+                      description: Path to the file
+                    commit_message:
+                      type: string
+                      description: Git commit message
+                    project_name:
+                      type: string
+                      description: Project identifier
+      responses:
+        '200':
+          description: File deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolResponse'
+
+  /projects/create:
+    post:
+      operationId: createProject
+      summary: Create a new Overleaf project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arguments:
+                  type: object
+                  required:
+                    - content
+                  properties:
+                    content:
+                      type: string
+                      description: LaTeX content or base64-encoded zip
+                    project_name:
+                      type: string
+                      description: Project name
+                    engine:
+                      type: string
+                      enum: [pdflatex, xelatex, lualatex, latex_dvipdf]
+                      description: TeX engine
+                    is_zip:
+                      type: boolean
+                      description: Whether content is a zip file
+      responses:
+        '200':
+          description: Project creation URL
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolResponse'
