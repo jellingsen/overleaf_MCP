@@ -13,9 +13,10 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
+# Copy application code and metadata
 COPY src/ ./src/
 COPY pyproject.toml .
+COPY README.md .
 
 # Install the package
 RUN pip install --no-cache-dir -e .
