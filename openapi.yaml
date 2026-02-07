@@ -5,8 +5,8 @@ info:
   version: 1.0.0
 
 servers:
-  - url: https://your-app-url.ondigitalocean.app
-    description: Production server (replace with your actual URL)
+  - url: https://overleaf-mcp-f3vwx.ondigitalocean.app
+    description: Production server
 
 components:
   securitySchemes:
@@ -40,6 +40,7 @@ security:
 paths:
   /:
     get:
+      operationId: rootHealthCheck
       summary: Health check
       security: []
       responses:
@@ -57,6 +58,7 @@ paths:
 
   /health:
     get:
+      operationId: healthCheck
       summary: Detailed health check
       security: []
       responses:
