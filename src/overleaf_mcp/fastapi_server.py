@@ -4,7 +4,7 @@ FastAPI wrapper for Overleaf MCP Server.
 Exposes MCP tools as HTTP endpoints for ChatGPT integration.
 """
 
-from fastapi import FastAPI, HTTPException, Header
+from fastapi import FastAPI, HTTPException, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Any, Optional
@@ -80,8 +80,8 @@ async def health():
 
 # === CREATE OPERATIONS ===
 
-@app.post("/projects/create", response_model=ToolResponse, dependencies=[verify_api_key])
-async def create_project(request: ToolRequest):
+@app.post("/projects/create", response_model=ToolResponse)
+async def create_project(request: ToolRequest, _: None = Depends(verify_api_key)):
     """Create a new Overleaf project."""
     try:
         result = await execute_tool("create_project", request.arguments)
@@ -90,8 +90,8 @@ async def create_project(request: ToolRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@app.post("/files/create", response_model=ToolResponse, dependencies=[verify_api_key])
-async def create_file(request: ToolRequest):
+@app.post("/files/create", response_model=ToolResponse)
+async def create_file(request: ToolRequest, _: None = Depends(verify_api_key)):
     """Create a new file in a project."""
     try:
         result = await execute_tool("create_file", request.arguments)
@@ -174,8 +174,8 @@ async def get_diff(request: ToolRequest):
 
 # === UPDATE OPERATIONS ===
 
-@app.post("/files/edit", response_model=ToolResponse, dependencies=[verify_api_key])
-async def edit_file(request: ToolRequest):
+@app.post("/files/edit", response_model=ToolResponse)
+async def edit_file(request: ToolRequest, _: None = Depends(verify_api_key)):
     """Edit a file with surgical replacement."""
     try:
         result = await execute_tool("edit_file", request.arguments)
@@ -184,8 +184,8 @@ async def edit_file(request: ToolRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@app.post("/files/rewrite", response_model=ToolResponse, dependencies=[verify_api_key])
-async def rewrite_file(request: ToolRequest):
+@app.post("/files/rewrite", response_model=ToolResponse)
+async def rewrite_file(request: ToolRequest, _: None = Depends(verify_api_key)):
     """Rewrite entire file content."""
     try:
         result = await execute_tool("rewrite_file", request.arguments)
@@ -194,8 +194,8 @@ async def rewrite_file(request: ToolRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@app.post("/sections/update", response_model=ToolResponse, dependencies=[verify_api_key])
-async def update_section(request: ToolRequest):
+@app.post("/sections/update", response_model=ToolResponse)
+async def update_section(request: ToolRequest, _: None = Depends(verify_api_key)):
     """Update a specific section."""
     try:
         result = await execute_tool("update_section", request.arguments)
@@ -204,8 +204,8 @@ async def update_section(request: ToolRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@app.post("/projects/sync", response_model=ToolResponse, dependencies=[verify_api_key])
-async def sync_project(request: ToolRequest):
+@app.post("/projects/sync", response_model=ToolResponse)
+async def sync_project(request: ToolRequest, _: None = Depends(verify_api_key)):
     """Sync project with Overleaf."""
     try:
         result = await execute_tool("sync_project", request.arguments)
@@ -216,8 +216,8 @@ async def sync_project(request: ToolRequest):
 
 # === DELETE OPERATIONS ===
 
-@app.post("/files/delete", response_model=ToolResponse, dependencies=[verify_api_key])
-async def delete_file(request: ToolRequest):
+@app.post("/files/delete", response_model=ToolResponse)
+async def delete_file(request: ToolRequest, _: None = Depends(verify_api_key)):
     """Delete a file from the project."""
     try:
         result = await execute_tool("delete_file", request.arguments)
